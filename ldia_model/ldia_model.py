@@ -3,6 +3,9 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.sparse import csr_matrix
 from sklearn.decomposition import LatentDirichletAllocation
+from gensim.models import CoherenceModel
+import gensim.corpora as corpora
+from data.data_preprocessing import custom_preprocessor_transcripts, custom_tokenizer_spacy_lemma
 
 
 def fit_ldia_model(
@@ -56,4 +59,38 @@ def create_df_topic_words_list(
 
     return df_topic_words_list
 
+
+def get_gensim_coherence_score(
+    df_topic_words_list: list[pd.DataFrame],
+    transcripts: pd.Series,
+    coherence_measure: str = 'c_v'
+) -> float:
+    '''
+
+    Adapt scikit-learn outputs to inputs for gensim CoherenceModel and get "Cv" coherence score.
+    Code referenced from https://stackoverflow.com/questions/60613532/how-do-i-calculate-the-coherence-score-of-an-sklearn-lda-model.
+
+    Args:
+        df_topic_words_list (list[pd.DataFrame]): Input list of per-topic DataFrames storing word and score.
+        transcripts (pd.Series): Original text data.
+        coherence_measure (str): Choice of coherence measure among {'u_mass', 'c_v', 'c_uci', 'c_npmi'}.
+
+    Returns:
+        list[pd.DataFrame]: Returns list of DataFrames for each topic containing top words and scores.
+
+    '''
+    # Get topics argument
+    topic_words_list = []
+    for df_topic_words in df_topic_words_list:
+        topic_words_list.append(df_topic_words['word'].tolist())
     
+    # Get texts and dictionary arguments
+    # Put transcripts through Data Preprocessing pipeline (preprocess -> tokenize/lemmatize) but not stop word removal (which is OK)
+    texts = [custom_tokenizer_spacy_lemma(custom_preprocessor_transcripts(transcript)) for transcript in transcripts]
+    dictionary = corpora.Dictionary(texts)
+
+    # Instantiate and run gensim CoherenceModel
+    coherence_model = CoherenceModel(topics=topic_words_list, texts=texts, dictionary=dictionary, coherence=coherence_measure)
+    coherence = coherence_model.get_coherence()
+
+    return coherence
