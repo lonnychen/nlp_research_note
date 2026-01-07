@@ -18,6 +18,8 @@ def plot_transcript_len(
 
     Args:
         transcript_lengths (pd.Series): Input data.
+        plot_mean (bool): Plot vertical mean line.
+        plot_median (bool): Plot vertical median line.
 
     Returns:
         None: Just plots.
