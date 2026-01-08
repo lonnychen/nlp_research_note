@@ -18,5 +18,6 @@ The repository structure below supports modular functional programming.
 ├── results/                   # Modeling outputs
 ├── Chen_NLP_Research_Note.pdf # Research Note PDF
 ├── README.md
+├── environment.yaml           # Library dependencies
 ├── nlp_research_note.ipynb    # Run notebook
 ```
