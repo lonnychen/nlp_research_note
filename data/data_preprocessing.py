@@ -158,6 +158,7 @@ def vectorize_transcripts_to_bow(
                                       1. List of tokens
 
     '''
+    # Call CountVectorizer with custom preprocessor and tokenizer, and optional token selection arguments
     transcripts_vectorizer = CountVectorizer(preprocessor=custom_preprocessor,
                                              tokenizer=custom_tokenizer,
                                              #analyzer='word', #default
@@ -167,6 +168,8 @@ def vectorize_transcripts_to_bow(
                                              max_df=features_dict['max_df'], # Ignore terms appearing in >n% of documents
                                              min_df=features_dict['min_df'], # Ignore terms appearing in <n% of documents
                                            )
+
+    # Fit vectorizer with transcripts texts and wrap outputs in a tuple
     transcripts_bow_csr = transcripts_vectorizer.fit_transform(transcripts)
     transcripts_bow_tokens = transcripts_vectorizer.get_feature_names_out()
     transcripts_bow_tuple = (transcripts_bow_csr, transcripts_bow_tokens)

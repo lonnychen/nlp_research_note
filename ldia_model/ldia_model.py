@@ -15,12 +15,12 @@ def fit_ldia_model(
 ) -> tuple[NDArray, NDArray]:
     '''
 
-    Fits scikit-learn LatentDirichletAllocation on BoW document-term matrix.
+    Fit scikit-learn LatentDirichletAllocation on BoW document-term matrix.
 
     Args:
         bow_csr (csr_matrix): Input BoW matrix.
         k_topics (int): Target number of topics for modeling.
-        random_state (int): Random number to set for reproducible results
+        random_state (int): Random number to set for reproducible results.
 
     Returns:
         tuple[NDArray, NDArray]: Returns document-topics and topic-words arrays from LDiA fitting.
@@ -40,8 +40,7 @@ def create_df_topic_words_list(
 ) -> list[pd.DataFrame]:
     '''
 
-    Create list of DataFrames for each topic containing top words and scores.
-    Code referenced from Raschka (YEAR).
+    Create list of DataFrames for each topic containing top words and scores. Code referenced from Raschka et al. (2022).
 
     Args:
         n_top_words (int): Number of top word scores to keep.
@@ -67,8 +66,7 @@ def get_gensim_coherence_score(
 ) -> float:
     '''
 
-    Adapt scikit-learn outputs to inputs for gensim CoherenceModel and get "Cv" coherence score.
-    Code referenced from https://stackoverflow.com/questions/60613532/how-do-i-calculate-the-coherence-score-of-an-sklearn-lda-model.
+    Adapt scikit-learn outputs to inputs for gensim CoherenceModel and get "Cv" coherence score. Code referenced from https://stackoverflow.com/questions/60613532/how-do-i-calculate-the-coherence-score-of-an-sklearn-lda-model.
 
     Args:
         df_topic_words_list (list[pd.DataFrame]): Input list of per-topic DataFrames storing word and score.
@@ -76,7 +74,7 @@ def get_gensim_coherence_score(
         coherence_measure (str): Choice of coherence measure among {'u_mass', 'c_v', 'c_uci', 'c_npmi'}.
 
     Returns:
-        list[pd.DataFrame]: Returns list of DataFrames for each topic containing top words and scores.
+        float: Returns coherence score output from CoherenceModel.get_coherence().
 
     '''
     # Get topics argument
@@ -94,3 +92,64 @@ def get_gensim_coherence_score(
     coherence = coherence_model.get_coherence()
 
     return coherence
+
+
+def tune_hyperparameters_ldia(
+    k_space: list[int],
+    n_top_words: int,
+    transcripts: pd.Series,
+    transcripts_bow_tuple: tuple[csr_matrix, list[str]],
+    random_state: int = None,
+) -> pd.DataFrame:
+    '''
+
+    Tune hyperparameters by looping through hyperparameter space combinations and running LDiA -> post-processing -> coherence pipeline.
+
+    Args:
+        k_space (list[int]): List of number of "k" topics to try.
+        n_top_words (int): Number of top word scores to keep for coherence scoring.
+        transcripts (pd.Series): Original text data.
+        transcripts_bow_tuple (tuple[csr_matrix, list[str]]): A tuple of
+                                                                0. "Bag of Words" document-term matrix in CSR (Compressed Sparse Row) format
+                                                                1. List of tokens
+        random_state (int): Random number to set for reproducible results for LDiA.
+
+    Returns:
+        pd.DataFrame: Returns tuning results as a DataFrame.
+
+    '''
+    # Setup variables
+    columns = ['k_topics', 'coherence']
+    tuning_results = {col: [] for col in columns}
+    
+    # Parameter space loop
+    for k_topics in k_space:
+    
+        current_hp_settings = f'k={k_topics}'
+        print(f'Tuning with hyperparameter settings: {current_hp_settings} ...')
+        
+        # Run iteration of LDiA
+        _, lda_topic_words = fit_ldia_model(bow_csr=transcripts_bow_tuple[0],
+                                            k_topics=k_topics,
+                                            random_state=random_state
+                                           )
+    
+        # Post-process LDiA output for coherence input
+        lda_topic_words_norm = lda_topic_words / lda_topic_words.sum(axis=1)[:, None]
+        df_topic_words_list = create_df_topic_words_list(n_top_words=n_top_words,
+                                                         topic_word_scores=lda_topic_words_norm,
+                                                         word_names=transcripts_bow_tuple[1]
+                                                        )
+    
+        # Get coherence score
+        coherence = get_gensim_coherence_score(df_topic_words_list=df_topic_words_list,
+                                               transcripts=transcripts
+                                              )
+        
+        # Populate data structure
+        tuning_results['k_topics'].append(k_topics)
+        tuning_results['coherence'].append(coherence)
+    
+        print(f'Completed: {current_hp_settings} with coherence score of {coherence:.4f}')
+    
+    return pd.DataFrame(tuning_results)

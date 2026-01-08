@@ -15,7 +15,7 @@ def _get_shorts_video_ids(
 ) -> pd.DataFrame:
     '''
 
-    Uses the YT-DLP library to extract information found from the list of videos returned at one YouTube (search) URL. Reference:  https://github.com/Standup4AI/dataset/blob/main/URL_videos.py `get_standup_video_urls`.
+    Use the YT-DLP library to extract information found from the list of videos returned at one YouTube (search) URL. Reference:  https://github.com/Standup4AI/dataset/blob/main/URL_videos.py `get_standup_video_urls`.
 
     Args:
         channel_search_url (str): Entire YouTube URL search string for video info extraction.

@@ -1,0 +1,14 @@
+dominant_topic
+topic_3           83
+topic_11          69
+topic_12          64
+topic_7           64
+topic_1           62
+topic_2           61
+topic_4           61
+topic_9           56
+topic_5           54
+topic_6           53
+topic_10          47
+topic_8           37
+Name: count, dtype: int64
